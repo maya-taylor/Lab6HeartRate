@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import sys, time, math
 import serial
+import random
 
 import re
 import pygame
@@ -122,20 +123,39 @@ def run_game(data):
 
         if t==10:
             rectlow1.set_x(50)
+            recthigh1.set_x(50)
 
-        update_rects(rect)
-        #rectlow1.set_x(rectlow1.get_x()-1)
-        #print(rectlow1.get_x())
+        update_rects(rectlow1, recthigh1)
+
+
+
+        # check if in rects
+        if rectlow1.get_x() <= t and rectlow1.get_x() + rectlow1.get_width() >= t:
+            if y1 < rectlow1.get_height():
+                print("too low!!")
+            if y1 > recthigh1.get_y():
+                print("too high!!")
+
         
 
         line1.set_data(xdata, y1data[10:])
         l1.get_texts()[0].set_text(f"{round(y1data[t+avg_size],2)} BPM")
-    return line1, #rectlow1
+    return line1, 
+
 
 
 def update_rects(low_rec, high_rec):
     low_rec.set_x(low_rec.get_x()-1)
-    print("hi")
+    high_rec.set_x(high_rec.get_x()-1)
+
+
+
+def set_rect_height(low_rec, high_rec):
+    low_rec = low_rec.set_height(random.randint(30,100))
+    #for high_rec, just change y coord by rand amount greater than 
+    #height of the low_rec
+    
+    
 
 
 def on_close_figure(event):
@@ -178,6 +198,21 @@ else:
 
     rectlow1 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='g')
     ax.add_patch(rectlow1)
+
+    recthigh1 = patches.Rectangle((-10, 200), 10, 250, linewidth=0, facecolor='g')
+    ax.add_patch(recthigh1)
+
+    rectlow2 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='r')
+    ax.add_patch(rectlow2)
+
+    recthigh2 = patches.Rectangle((-10, 200), 10, 250, linewidth=0, facecolor='r')
+    ax.add_patch(recthigh2)
+
+    rectlow3 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='b')
+    ax.add_patch(rectlow3)
+
+    recthigh3 = patches.Rectangle((-10, 200), 10, 250, linewidth=0, facecolor='b')
+    ax.add_patch(recthigh3)
 
     ani1 = animation.FuncAnimation(fig, run_game, data_gen, blit=False, interval=100, repeat=False)
     plt.show()
