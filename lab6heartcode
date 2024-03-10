@@ -7,6 +7,7 @@ import serial
 
 import re
 import pygame
+import matplotlib.patches as patches
 
 #initialixing pygame
 pygame.init()
@@ -22,8 +23,8 @@ def on_option_select():
     selected = selected_option.get()
     result_label.config(text=f"Selected Option: {selected}")
 root = tk.Tk()
-root.title("Select you Heartrate Monitoring Mode")
-root.geometry("400x300")
+root.title("Select your Heartrate Monitoring Mode")
+root.geometry("400x100")
 # Create a StringVar to hold the selected option
 selected_option = tk.StringVar()
 # Create the dropdown menu
@@ -104,6 +105,38 @@ def run(data):
         l2.get_texts()[0].set_text(f"Avg Heartrate = {round(y1avg,2)} BPM")
     return line1, line2,
 
+def run_game(data):
+    # update the data
+    t,y1 = data
+    if t>-1:
+        xdata.append(t)
+        if y1 > 250:
+            y1data.append(y1data[t+avg_size])
+        else:
+            y1data.append(y1)
+        
+
+        if t>xsize/4: # Scroll to the left.
+            ax.set_xlim(t-xsize/4, t+3*xsize/4)
+
+
+        if t==10:
+            rectlow1.set_x(50)
+
+        update_rects(rect)
+        #rectlow1.set_x(rectlow1.get_x()-1)
+        #print(rectlow1.get_x())
+        
+
+        line1.set_data(xdata, y1data[10:])
+        l1.get_texts()[0].set_text(f"{round(y1data[t+avg_size],2)} BPM")
+    return line1, #rectlow1
+
+
+def update_rects(low_rec, high_rec):
+    low_rec.set_x(low_rec.get_x()-1)
+    print("hi")
+
 
 def on_close_figure(event):
     sys.exit(0)
@@ -130,9 +163,28 @@ if serious_flag == 1:
     ani1 = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=100, repeat=False)
     plt.show()
 else:
+    print("hi")
+
+    data_gen.t = -1
+    fig = plt.figure()
+    fig.canvas.mpl_connect('close_event', on_close_figure)
+    ax = fig.add_subplot(111)
+    line1, = ax.plot([], [], label='BPM', lw=2)
+    ax.set_ylim(0, 250)
+    ax.set_xlim(0, xsize)
+    ax.set_ylabel('Heartrate (BPM)')
+    l1 = ax.legend(handles = [line1], loc = 1)
+    ax.add_artist(l1)
+
+    rectlow1 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='g')
+    ax.add_patch(rectlow1)
+
+    ani1 = animation.FuncAnimation(fig, run_game, data_gen, blit=False, interval=100, repeat=False)
+    plt.show()
+    
     # still set up same graph style (maybe no graph lines though)
     # could even still label with Heartrate (BPM)
-    print("hi")
+    
     # add recangles with random heights (two types at a time - top rect and bottom rect)
     # move them along graph (in run - should make separate run_game func)
     # if the current t and BPM vals are in the rectangles, you lose
@@ -140,3 +192,6 @@ else:
     # height between rectangles can also be somewhat random
     # should start moving graph earlier, and keep location of current val towards beginning
     # look into having an image at the current val - you probably can have images on graphs
+
+
+    # https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
