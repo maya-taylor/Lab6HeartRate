@@ -8,17 +8,27 @@ import random
 import re
 import pygame
 import matplotlib.patches as patches
+from matplotlib.offsetbox import (OffsetImage, AnnotationBbox)
+import matplotlib.image as image
+import tkinter as tk
+import tkinter.messagebox as messagebox
+
 
 #initialixing pygame
 pygame.init()
 pygame.mixer.init()
 
 lives_left = 3 #number of lives until game terminates
-life_str = '<3'
+life_str = '❤'
 #serious mode: only graphing
 #non-serious mode flappy bird
 
-import tkinter as tk
+#image for flappy bird icon
+#reading this image 
+file = "C:\\Users\\maya2\\Documents\\GitHub\\Lab6HeartRate\\heart-anatomy.png"
+logo = image.imread(file)
+#print(logo.shape); print(logo)
+
 def on_option_select():
     selected = selected_option.get()
     result_label.config(text=f"Selected Option: {selected}")
@@ -75,7 +85,13 @@ def data_gen():
         strin = ser.readline()
         print(strin) 
         t+=1
-        val1= float(strin[3:])
+        try:
+            val1= float(strin[3:])
+        except:
+            print("nope")
+            messagebox.showinfo("No Signal", "No signal detected! Please check your monitor connection.")
+            sys.exit(0)
+
         yield t, val1
 
 
@@ -106,41 +122,48 @@ def run(data):  # Normal graph function (with averaging)
 
 def run_game(data): # Game graph function
     # update the data
+    global ab
     t,y1 = data
     if t>-1:
         xdata.append(t)
+        mody1 = y1
         if y1 > 250:
             y1data.append(y1data[t+avg_size])
+            mody1 = y1data[t+avg_size]
         else:
             y1data.append(y1)
         
+        ab.remove()
+        
+        # Create a new AnnotationBbox with the updated position
+        imagebox = OffsetImage(logo, zoom=0.03)
+        ab = AnnotationBbox(imagebox, (t, mody1), frameon=False)
+        ax.add_artist(ab)
 
         if t>xsize/4:  # Scroll to the left.
             ax.set_xlim(t-xsize/4, t+3*xsize/4)
-            t1.set_position(((t-xsize+10), 220))
+            t1.set_position(((t-xsize/4+3), 235))
 
         update_rects(rectlow1, recthigh1)
         update_rects(rectlow2, recthigh2)
         update_rects(rectlow3, recthigh3)
         update_rects(rectlow4, recthigh4)
 
-
-        check_in_rects(t, y1data[t+avg_size], rectlow1, recthigh1)
-        check_in_rects(t, y1data[t+avg_size], rectlow2, recthigh2)
-        check_in_rects(t, y1data[t+avg_size], rectlow3, recthigh3)
-        check_in_rects(t, y1data[t+avg_size], rectlow4, recthigh4)
-
-
         reset_rects(t, rectlow1, recthigh1)
         reset_rects(t, rectlow2, recthigh2)
         reset_rects(t, rectlow3, recthigh3)            
         reset_rects(t, rectlow4, recthigh4)            
         
-        t1.set_text(f"Lives Left: {lives_left}")
+        t1.set_text(f"Lives Left: {lives_left*life_str}")
 
 
         line1.set_data(xdata, y1data[10:])
         l1.get_texts()[0].set_text(f"{round(y1data[t+avg_size],2)} BPM")
+
+        check_in_rects(t, mody1, rectlow1, recthigh1)
+        check_in_rects(t, mody1, rectlow2, recthigh2)
+        check_in_rects(t, mody1, rectlow3, recthigh3)
+        check_in_rects(t, mody1, rectlow4, recthigh4)
     return line1, 
 
 
@@ -160,17 +183,29 @@ def reset_rects(t, low_rec, high_rec): #resets rects to right side and updates h
         # needs to be changed if we add more rectangles!
         low_rec.set_x(t+3*xsize/4)
         high_rec.set_x(t+3*xsize/4)
+        low_rec.set_y(0)
         set_rect_height(low_rec, high_rec)
 
 
 def check_in_rects(t, y1, low_rec, high_rec):  # check if curr val is in a rect set
     global lives_left
-    if y1 < low_rec.get_height():
-        print("too low!!")
-        lives_left -= 1
-    if y1 > high_rec.get_y():
-        print("too high!!")
-        lives_left -= 1
+    if low_rec.get_x() <= t and low_rec.get_x() + low_rec.get_width() >= t:
+        if y1 < low_rec.get_y() + low_rec.get_height():
+            print("too low!!")
+            low_rec.set_y(-200)
+            lives_left -= 1
+        if y1 > high_rec.get_y():
+            print("too high!!")
+            high_rec.set_y(250)
+            lives_left -= 1
+        if lives_left == 0:
+            #add game over sequence
+            
+            print("dead")
+            time.sleep(1)
+            messagebox.showwarning("YOU DIED", f"Your score: {t}\nYour average heartrate: {round(sum(y1data[avg_size:])/(len(y1data)-avg_size),2)}")
+            sys.exit(0)
+
 
 
 def on_close_figure(event):
@@ -195,6 +230,8 @@ if serious_flag == 1:
     ax.add_artist(l1)
     l2 = ax.legend(handles=[line2], loc = 4)
 
+    #plt.imshow(logo)
+
     ani1 = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=100, repeat=False)
     plt.show()
 
@@ -210,31 +247,34 @@ else:
     l1 = ax.legend(handles = [line1], loc = 1)
     ax.add_artist(l1)
 
-    t1 = ax.text(10,220,f"Lives left: {lives_left}", bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round',alpha=0.5))
+    t1 = ax.text(3,235,f"Lives left: {life_str*lives_left}", bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round',alpha=0.5))
 
+    imagebox = OffsetImage(logo, zoom = 0.03)
+    ab = AnnotationBbox(imagebox, (0, 80), frameon = False)
+    ax.add_artist(ab)
 
-    rectlow1 = patches.Rectangle((int(xsize*2/3), 0), 10, 50, linewidth=0, facecolor='g')
+    rectlow1 = patches.Rectangle((int(xsize*1/3), 0), 10, 50, linewidth=0, facecolor='steelblue')
     ax.add_patch(rectlow1)
 
-    recthigh1 = patches.Rectangle((int(xsize*2/3), 200), 10, 250, linewidth=0, facecolor='g')
+    recthigh1 = patches.Rectangle((int(xsize*1/3), 200), 10, 250, linewidth=0, facecolor='steelblue')
     ax.add_patch(recthigh1)
 
-    rectlow2 = patches.Rectangle((xsize, 0), 10, 50, linewidth=0, facecolor='r')
+    rectlow2 = patches.Rectangle((int(xsize*2/3), 0), 10, 50, linewidth=0, facecolor='crimson')
     ax.add_patch(rectlow2)
 
-    recthigh2 = patches.Rectangle((xsize, 200), 10, 250, linewidth=0, facecolor='r')
+    recthigh2 = patches.Rectangle((int(xsize*2/3), 200), 10, 250, linewidth=0, facecolor='crimson')
     ax.add_patch(recthigh2)
 
-    rectlow3 = patches.Rectangle((int(xsize*4/3), 0), 10, 50, linewidth=0, facecolor='b')
+    rectlow3 = patches.Rectangle((int(xsize*3/3), 0), 10, 50, linewidth=0, facecolor='lightblue')
     ax.add_patch(rectlow3)
 
-    recthigh3 = patches.Rectangle((int(xsize*4/3), 200), 10, 250, linewidth=0, facecolor='b')
+    recthigh3 = patches.Rectangle((int(xsize*3/3), 200), 10, 250, linewidth=0, facecolor='lightblue')
     ax.add_patch(recthigh3)
 
-    rectlow4 = patches.Rectangle((int(xsize*5/3), 0), 10, 50, linewidth=0, facecolor='pink')
+    rectlow4 = patches.Rectangle((int(xsize*4/3), 0), 10, 50, linewidth=0, facecolor='palevioletred')
     ax.add_patch(rectlow4)
 
-    recthigh4 = patches.Rectangle((int(xsize*5/3), 200), 10, 250, linewidth=0, facecolor='pink')
+    recthigh4 = patches.Rectangle((int(xsize*4/3), 200), 10, 250, linewidth=0, facecolor='palevioletred')
     ax.add_patch(recthigh4)
 
     set_rect_height(rectlow1, recthigh1)
