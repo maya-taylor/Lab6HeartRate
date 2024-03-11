@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -46,7 +45,7 @@ if selected_option.get() == 'Serious Mode':
     serious_flag = 1
     print("Serious")
 
-xsize=100
+xsize=100 #must be multiple of 4!
 
 avg_size = 10
 xdata, y1data, y1avgdata = [], [], []
@@ -81,8 +80,7 @@ def data_gen():
 
 
 
-
-def run(data):
+def run(data):  # Normal graph function (with averaging)
     # update the data
     t,y1 = data
     if t>-1:
@@ -99,14 +97,15 @@ def run(data):
 
         if t>xsize: # Scroll to the left.
             ax.set_xlim(t-xsize, t)
-            t1.set_position(((t-xsize+10), 220))
+    
         line1.set_data(xdata, y1data[10:])
         line2.set_data(xdata, y1avgdata)
         l1.get_texts()[0].set_text(f"Heartrate = {round(y1data[t+avg_size],2)} BPM")
         l2.get_texts()[0].set_text(f"Avg Heartrate = {round(y1avg,2)} BPM")
+
     return line1, line2,
 
-def run_game(data):
+def run_game(data): # Game graph function
     # update the data
     t,y1 = data
     if t>-1:
@@ -117,25 +116,20 @@ def run_game(data):
             y1data.append(y1)
         
 
-        if t>xsize/4: # Scroll to the left.
+        if t>xsize/4:  # Scroll to the left.
             ax.set_xlim(t-xsize/4, t+3*xsize/4)
 
-
-        if t==10:
-            rectlow1.set_x(50)
-            recthigh1.set_x(50)
-
         update_rects(rectlow1, recthigh1)
+        update_rects(rectlow2, recthigh3)
+        update_rects(rectlow3, recthigh3)
 
+        check_in_rects(t, y1, rectlow1, recthigh1)
+        check_in_rects(t, y1, rectlow2, recthigh2)
+        check_in_rects(t, y1, rectlow3, recthigh3)
 
-
-        # check if in rects
-        if rectlow1.get_x() <= t and rectlow1.get_x() + rectlow1.get_width() >= t:
-            if y1 < rectlow1.get_height():
-                print("too low!!")
-            if y1 > recthigh1.get_y():
-                print("too high!!")
-
+        reset_rects(t, rectlow1, recthigh1)
+        reset_rects(t, rectlow2, recthigh2)
+        reset_rects(t, rectlow3, recthigh3)            
         
 
         line1.set_data(xdata, y1data[10:])
@@ -143,19 +137,31 @@ def run_game(data):
     return line1, 
 
 
-
-def update_rects(low_rec, high_rec):
+def update_rects(low_rec, high_rec): # shifts rects left 
     low_rec.set_x(low_rec.get_x()-1)
     high_rec.set_x(high_rec.get_x()-1)
 
 
+def set_rect_height(low_rec, high_rec): # updates heights + space between rectangles randomly
+    low_rec.set_height(random.randint(30,100))
+    high_rec.set_y(low_rec.get_height + random.randint(50,150)) #may need to modify rand
 
-def set_rect_height(low_rec, high_rec):
-    low_rec = low_rec.set_height(random.randint(30,100))
-    #for high_rec, just change y coord by rand amount greater than 
-    #height of the low_rec
     
-    
+def reset_rects(t, low_rec, high_rec): #resets rects to right side and updates heights if it has been long enough 
+    if (low_rec.get_x() < t - xsize/4 - random.randint(int(xsize/3)-5, int(xsize/3)+5)): 
+        # location is set to right edge if rect is approx xsize/3 past the left edge
+        # needs to be changed if we add more rectangles!
+        low_rec.set_x(t+3*xsize/4)
+        high_rec.set_x(t+3*xsize/4)
+        set_rect_height(low_rec, high_rec)
+
+
+def check_in_rects(t, y1, low_rec, high_rec):  # check if curr val is in a rect set
+    if low_rec.get_x() <= t and low_rec.get_x() + low_rec.get_width() >= t:
+        if y1 < low_rec.get_height():
+            print("too low!!")
+        if y1 > high_rec.get_y():
+            print("too high!!")
 
 
 def on_close_figure(event):
@@ -182,9 +188,8 @@ if serious_flag == 1:
 
     ani1 = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=100, repeat=False)
     plt.show()
-else:
-    print("hi")
 
+else:
     data_gen.t = -1
     fig = plt.figure()
     fig.canvas.mpl_connect('close_event', on_close_figure)
@@ -196,37 +201,43 @@ else:
     l1 = ax.legend(handles = [line1], loc = 1)
     ax.add_artist(l1)
 
-    rectlow1 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='g')
+    rectlow1 = patches.Rectangle((int(xsize*2/3), 0), 10, 50, linewidth=0, facecolor='g')
     ax.add_patch(rectlow1)
 
-    recthigh1 = patches.Rectangle((-10, 200), 10, 250, linewidth=0, facecolor='g')
+    recthigh1 = patches.Rectangle((int(xsize*2/3), 200), 10, 250, linewidth=0, facecolor='g')
     ax.add_patch(recthigh1)
 
-    rectlow2 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='r')
+    rectlow2 = patches.Rectangle((xsize, 0), 10, 50, linewidth=0, facecolor='r')
     ax.add_patch(rectlow2)
 
-    recthigh2 = patches.Rectangle((-10, 200), 10, 250, linewidth=0, facecolor='r')
+    recthigh2 = patches.Rectangle((xsize, 200), 10, 250, linewidth=0, facecolor='r')
     ax.add_patch(recthigh2)
 
-    rectlow3 = patches.Rectangle((-10, 0), 10, 50, linewidth=0, facecolor='b')
+    rectlow3 = patches.Rectangle((int(xsize*4/3), 0), 10, 50, linewidth=0, facecolor='b')
     ax.add_patch(rectlow3)
 
-    recthigh3 = patches.Rectangle((-10, 200), 10, 250, linewidth=0, facecolor='b')
+    recthigh3 = patches.Rectangle((int(xsize*4/3), 200), 10, 250, linewidth=0, facecolor='b')
     ax.add_patch(recthigh3)
+
+    set_rect_height(rectlow1, recthigh1)
+    set_rect_height(rectlow2, recthigh2)
+    set_rect_height(rectlow3, recthigh3)  
+    
+    # rects are set up before we start - random heights and spaced correctly
 
     ani1 = animation.FuncAnimation(fig, run_game, data_gen, blit=False, interval=100, repeat=False)
     plt.show()
     
-    # still set up same graph style (maybe no graph lines though)
-    # could even still label with Heartrate (BPM)
+    # still set up same graph style (maybe no graph lines though)                                   ✓
+    # could even still label with Heartrate (BPM)                                                   ✓
     
-    # add recangles with random heights (two types at a time - top rect and bottom rect)
-    # move them along graph (in run - should make separate run_game func)
-    # if the current t and BPM vals are in the rectangles, you lose
-    # space between rectangles (how long to wait before adding a new one) can be somewhat random
-    # height between rectangles can also be somewhat random
-    # should start moving graph earlier, and keep location of current val towards beginning
-    # look into having an image at the current val - you probably can have images on graphs
-
+    # add recangles with random heights (two types at a time - top rect and bottom rect)            ✓
+    # move them along graph (in run - should make separate run_game func)                           ✓
+    # if the current t and BPM vals are in the rectangles, you lose                                 ✓
+    # space between rectangles (how long to wait before adding a new one) can be somewhat random    ✓
+    # height between rectangles can also be somewhat random                                         ✓
+    # should start moving graph earlier, and keep location of current val towards beginning         ✓
+    
+    # look into having an image at the current val - you probably can have images on graphs  <-------------------
 
     # https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
