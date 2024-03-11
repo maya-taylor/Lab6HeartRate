@@ -81,7 +81,6 @@ def data_gen():
 
 
 
-
 def run(data):
     # update the data
     t,y1 = data
@@ -99,7 +98,6 @@ def run(data):
 
         if t>xsize: # Scroll to the left.
             ax.set_xlim(t-xsize, t)
-            t1.set_position(((t-xsize+10), 220))
         line1.set_data(xdata, y1data[10:])
         line2.set_data(xdata, y1avgdata)
         l1.get_texts()[0].set_text(f"Heartrate = {round(y1data[t+avg_size],2)} BPM")
