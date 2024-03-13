@@ -1,4 +1,4 @@
-
+#Reference code from our previous heart rate monitor made on EMF8 microcontroller
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
