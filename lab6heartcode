@@ -51,6 +51,7 @@ root.mainloop()
 
 serious_flag = 0
 
+#setting game mode and displaying choice selected
 if selected_option.get() == 'Serious Mode':
     serious_flag = 1
     print("Serious")
@@ -68,7 +69,7 @@ for i in range(avg_size):
     y1data.append(80)
 
 
-
+#serial initialization
 ser = serial.Serial(
     port='COM11', #change to whichever serial port we end up using (e.g. COM5)
     baudrate=115200,
@@ -207,12 +208,12 @@ def check_in_rects(t, y1, low_rec, high_rec):  # check if curr val is in a rect 
             sys.exit(0)
 
 
-
+#ending display on close of the graph
 def on_close_figure(event):
     sys.exit(0)
 
 
-
+#code for graphing the 'serious' version
 if serious_flag == 1: 
     data_gen.t = -1
     fig = plt.figure()
